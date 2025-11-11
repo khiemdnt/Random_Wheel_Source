@@ -232,7 +232,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎡 Pes la hét - Random chia đội Sử pa sư</h1>
+        <h1>🎡 Pes La Hét - Sư pa sư</h1>
         
         <div class="wheel-container">
             <div class="arrow"></div>
@@ -340,40 +340,73 @@
             if (isSpinning) return;
 
             updateItems();
-            resultDiv.classList.remove('show');
-            isSpinning = true;
-            spinBtn.disabled = true;
-
-            // Random spins between 5-10 full rotations plus random angle
-            const spins = 5 + Math.random() * 5;
-            const degrees = spins * 360 + Math.random() * 360;
             
-            currentRotation += degrees;
-            canvas.style.transform = `rotate(${currentRotation}deg)`;
-
+            // Redraw wheel with current items before spinning
+            currentRotation = 0;
+            canvas.style.transform = 'rotate(0deg)';
+            drawWheel();
+            
+            // Small delay to show the redrawn wheel before spinning
             setTimeout(() => {
-                isSpinning = false;
-                spinBtn.disabled = false;
-                showResult();
-            }, 4000);
+                resultDiv.classList.remove('show');
+                isSpinning = true;
+                spinBtn.disabled = true;
+
+                // Random spins between 5-10 full rotations plus random angle
+                const spins = 5 + Math.random() * 5;
+                const degrees = spins * 360 + Math.random() * 360;
+                
+                currentRotation = degrees;
+                canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+                setTimeout(() => {
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    showResult();
+                }, 4000);
+            }, 100);
         }
 
         function showResult() {
             // Calculate which segment won
+            // The wheel rotates clockwise, arrow points at top (90 degrees in canvas coordinates)
             const normalizedRotation = currentRotation % 360;
             const anglePerItem = 360 / items.length;
-            // Adjust for arrow at top (0 degrees)
-            const adjustedRotation = (360 - normalizedRotation + 90) % 360;
-            const winningIndex = Math.floor(adjustedRotation / anglePerItem) % items.length;
             
-            resultText.textContent = items[winningIndex];
+            // Since arrow is at top and wheel rotates clockwise
+            // We need to find which segment is under the arrow
+            const winningIndex = Math.floor((360 - normalizedRotation) / anglePerItem) % items.length;
+            
+            const winner = items[winningIndex];
+            resultText.textContent = winner;
             resultDiv.classList.add('show');
+
+            // Remove the winning item
+            items.splice(winningIndex, 1);
+            
+            // Update textarea
+            itemsInput.value = items.join('\n');
+            
+            // Check if any items left
+            if (items.length === 0) {
+                setTimeout(() => {
+                    alert('🎉 Đã hết lựa chọn! Vui lòng reset hoặc thêm lựa chọn mới.');
+                    spinBtn.disabled = true;
+                }, 500);
+            }
         }
 
         function reset() {
             currentRotation = 0;
             canvas.style.transform = 'rotate(0deg)';
             resultDiv.classList.remove('show');
+            items = itemsInput.value.trim().split('\n').filter(item => item.trim() !== '');
+            if (items.length < 2) {
+                items = ['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5', 'Option 6'];
+                itemsInput.value = items.join('\n');
+            }
+            spinBtn.disabled = false;
+            drawWheel();
         }
 
         spinBtn.addEventListener('click', spin);
